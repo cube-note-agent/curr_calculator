@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CURR计算器</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0a;color:#e0e0e0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;padding:40px 60px;min-height:100vh}
+h1{font-size:32px;margin-bottom:40px;color:#fff;font-weight:300;letter-spacing:1px}
+.main-grid{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-bottom:50px}
+.card{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;padding:28px}
+.card-title{font-size:20px;margin-bottom:20px;color:#fff;font-weight:400}
+
+.model-diagram{background:#f5f5f5;border-radius:6px;padding:20px;margin-bottom:24px;color:#333;position:relative;overflow:hidden}
+.model-diagram-title{font-weight:700;margin-bottom:8px;font-size:13px;letter-spacing:0.5px}
+.acquisition-arrow{text-align:center;font-size:11px;color:#666;margin-bottom:6px}
+.acquisition-arrow::before{content:'▼';color:#8fbc8f;font-size:14px}
+.model-top-row{display:flex;justify-content:space-between;gap:8px;margin-bottom:4px}
+.model-box{padding:7px 10px;border-radius:3px;font-size:11px;text-align:center;flex:1;line-height:1.3}
+.box-green{background:#c8e6c9;color:#2e7d32;border:1px solid #a5d6a7}
+.box-blue{background:#90caf9;color:#1565c0;border:1px solid #64b5f6}
+.box-orange{background:#ffcc80;color:#e65100;border:1px solid #ffb74d}
+.box-purple{background:#ce93d8;color:#6a1b9a;border:1px solid #ba68c8}
+.box-red{background:#ef9a9a;color:#c62828;border:1px solid #e57373}
+.model-center{display:flex;justify-content:center;margin:6px 0}
+.model-center .model-box{max-width:320px;flex:none}
+.model-arrows-row{display:flex;justify-content:space-around;font-size:9px;color:#888;margin:4px 0}
+.model-bottom-row{display:flex;justify-content:center;margin:4px 0}
+.model-bottom-row .model-box{max-width:360px;flex:none}
+.model-bottom-row2{display:flex;justify-content:center;margin:4px 0}
+.model-bottom-row2 .model-box{max-width:440px;flex:none}
+.model-bottom-row3{display:flex;justify-content:center;margin:4px 0}
+.model-bottom-row3 .model-box{max-width:520px;flex:none}
+.side-label{position:absolute;font-size:9px;color:#888}
+.side-label-left{left:4px;top:50%;transform:translateY(-50%)}
+.side-label-right{right:4px;top:40%;transform:translateY(-50%)}
+
+.section-title{font-size:16px;color:#fff;margin:20px 0 14px 0;font-weight:400}
+.history-item{background:#111;border:1px solid #2a2a2a;border-radius:5px;padding:13px 18px;margin-bottom:10px;cursor:pointer;transition:all .2s;font-size:14px;color:#ccc}
+.history-item:hover{border-color:#ff6b6b;background:#1e1414;color:#fff}
+
+.input-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 30px}
+.input-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid #222}
+.input-label{font-size:13px;color:#bbb}
+.input-label-en{font-size:11px;color:#666;margin-top:1px}
+.input-field{background:#111;border:1px solid #333;border-radius:4px;padding:6px 10px;color:#fff;font-size:13px;width:100px;text-align:right;font-family:'SF Mono',Monaco,monospace}
+.input-field:focus{outline:none;border-color:#ff6b6b}
+.rate-value{color:#ff6b6b;font-size:13px;font-family:'SF Mono',Monaco,monospace}
+
+.param-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px}
+.param-box{background:#111;border:1px solid #2a2a2a;border-radius:5px;padding:14px}
+.param-label{font-size:11px;color:#888;margin-bottom:8px}
+.param-input{background:transparent;border:none;color:#fff;font-size:15px;font-family:'SF Mono',Monaco,monospace;width:100%;outline:none}
+
+.calc-btn{width:100%;background:linear-gradient(135deg,#ff6b6b,#ff5252);color:#fff;border:none;border-radius:6px;padding:15px;font-size:16px;cursor:pointer;transition:all .2s;font-weight:500;letter-spacing:1px}
+.calc-btn:hover{background:linear-gradient(135deg,#ff5252,#ff3d3d);transform:translateY(-1px);box-shadow:0 4px 20px rgba(255,82,82,.3)}
+.calc-btn:active{transform:translateY(0)}
+
+.results-section{margin-top:10px}
+.results-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}
+.results-title{font-size:22px;color:#fff;font-weight:300}
+.results-actions{display:flex;gap:12px}
+.action-btn{background:#1a1a1a;border:1px solid #333;border-radius:5px;padding:9px 20px;color:#aaa;cursor:pointer;font-size:13px;transition:all .2s}
+.action-btn:hover{border-color:#555;color:#fff}
+
+table{width:100%;border-collapse:collapse;background:#1a1a1a;border-radius:8px;overflow:hidden;border:1px solid #2a2a2a}
+th{background:#2a1a1a;padding:13px 20px;text-align:left;font-size:11px;color:#999;text-transform:uppercase;letter-spacing:1.5px;font-weight:500}
+td{padding:13px 20px;border-top:1px solid #222;font-size:14px;font-family:'SF Mono',Monaco,monospace}
+td:first-child{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#ddd}
+.positive{color:#4ade80}
+.negative{color:#f87171}
+.highlight-badge{border:1.5px solid #4ade80;border-radius:14px;padding:2px 10px;display:inline-block;color:#4ade80}
+.empty-state{text-align:center;color:#555;padding:50px;font-size:14px;font-family:-apple-system,sans-serif}
+
+.formula-note{background:#111;border:1px solid #2a2a2a;border-radius:5px;padding:12px 16px;margin-top:16px;font-size:12px;color:#888;line-height:1.6}
+.formula-note code{color:#ff6b6b;font-family:'SF Mono',Monaco,monospace}
+
+@media(max-width:900px){
+  .main-grid{grid-template-columns:1fr}
+  .input-grid{grid-template-columns:1fr}
+  body{padding:20px}
+}
+</style>
+</head>
+<body>
+
+<h1>CURR计算器</h1>
+
+<div class="main-grid">
+  <!-- 左栏 -->
+  <div class="card">
+    <div class="model-diagram">
+      <div class="model-diagram-title">DAILY ACTIVE USERS MODEL</div>
+      <div class="acquisition-arrow">Acquisition（唯一外部入口）</div>
+      <div class="model-top-row">
+        <div class="model-box box-green">Reactivated Users<br><span style="font-size:9px;opacity:.7">(first day back, 离开7-29天)</span></div>
+        <div class="model-box box-green">New Users<br><span style="font-size:9px;opacity:.7">(first day in the app)</span></div>
+        <div class="model-box box-green">Resurrected Users<br><span style="font-size:9px;opacity:.7">(first day back, 离开30天+)</span></div>
+      </div>
+      <div class="model-arrows-row">
+        <span>1-RURR ↓ &nbsp; RURR ↓</span>
+        <span>1-NURR ↓ &nbsp; NURR ↓</span>
+        <span>1-SURR ↓ &nbsp; SURR ↓</span>
+      </div>
+      <div class="model-center">
+        <div class="model-box box-blue">Current Users<br><span style="font-size:9px;opacity:.7">(active today and at least one other time in the prior 7 days)</span></div>
+      </div>
+      <div class="model-arrows-row">
+        <span>1-CURR ↓</span>
+        <span style="color:#1565c0">CURR ↻</span>
+      </div>
+      <div class="model-bottom-row">
+        <div class="model-box box-orange">At risk WAUs<br><span style="font-size:9px;opacity:.7">(Inactive today, but active in last 1-6 days)</span></div>
+      </div>
+      <div class="model-arrows-row"><span>WAU Loss Rate ↓</span></div>
+      <div class="model-bottom-row2">
+        <div class="model-box box-purple">At risk MAUs<br><span style="font-size:9px;opacity:.7">(Inactive today, inactive in last 1-6 days, but active in last 7-29 days)</span></div>
+      </div>
+      <div class="model-arrows-row"><span>MAU Loss Rate ↓</span></div>
+      <div class="model-bottom-row3">
+        <div class="model-box box-red">Dead Users<br><span style="font-size:9px;opacity:.7">(Inactive today and last 29 days, 即31天+)</span></div>
+      </div>
+      <div class="side-label side-label-left" style="top:35%">iMAURR →</div>
+      <div class="side-label side-label-right" style="top:55%">← Resurrection Rate</div>
+    </div>
+
+    <div class="formula-note">
+      <strong style="color:#ccc">模型公式：</strong><br>
+      <code>DAU = New + Reactivated + Resurrected + Current</code>（前四个桶 = 今天活跃的用户）<br>
+      <code>WAU = DAU + At risk WAUs</code>（周活 = 日活 + 风险周活）<br>
+      <code>MAU = WAU + At risk MAUs</code>（月活 = 周活 + 风险月活）<br>
+      <code>Total = MAU + Dead Users</code>（总用户 = 月活 + 休眠用户）<br>
+      唯一外部入口是 <code>Acquisition → New Users</code>，其他"回来"的用户来自 MAU→RU 和 DU→SU
+    </div>
+
+    <div class="section-title">历史实验</div>
+    <div class="history-item" onclick="loadPreset('tool')">(快速演示) 工具型APP</div>
+    <div class="history-item" onclick="loadPreset('social')">(快速演示) 社交型APP</div>
+  </div>
+
+  <!-- 右栏 -->
+  <div class="card">
+    <div class="input-grid">
+      <div>
+        <div class="card-title">用户大盘</div>
+        <div class="input-row">
+          <div><div class="input-label">新用户</div><div class="input-label-en">(New User / 每季度流入)</div></div>
+          <input class="input-field" id="NU" type="number" value="10000">
+        </div>
+        <div class="input-row">
+          <div><div class="input-label">重新激活用户</div><div class="input-label-en">(Reactivated / 初始值)</div></div>
+          <input class="input-field" id="RU" type="number" value="5000">
+        </div>
+        <div class="input-row">
+          <div><div class="input-label">复活用户</div><div class="input-label-en">(Resurrected / 初始值)</div></div>
+          <input class="input-field" id="SU" type="number" value="3000">
+        </div>
+        <div class="input-row">
+          <div><div class="input-label">当前用户</div><div class="input-label-en">(Current Users)</div></div>
+          <input class="input-field" id="CU" type="number" value="50000">
+        </div>
+        <div class="input-row">
+          <div><div class="input-label">可能流失周活</div><div class="input-label-en">(At risk WAUs)</div></div>
+          <input class="input-field" id="WAU" type="number" value="20000">
+        </div>
+        <div class="input-row">
+          <div><div class="input-label">可能流失月活</div><div class="input-label-en">(At risk MAUs)</div></div>
+          <input class="input-field" id="MAU" type="number" value="15000">
+        </div>
+        <div class="input-row">
+          <div><div class="input-label">休眠用户</div><div class="input-label-en">(Dead Users)</div></div>
+          <input class="input-field" id="DU" type="number" value="100000">
+        </div>
+      </div>
+      <div>
+        <div class="card-title">转化指标</div>
+        <div class="input-row">
+          <div class="input-label">NURR</div>
+          <input class="input-field rate-value" id="NURR" type="number" value="30" step="0.1">
+        </div>
+        <div class="input-row">
+          <div class="input-label">RURR</div>
+          <input class="input-field rate-value" id="RURR" type="number" value="40" step="0.1">
+        </div>
+        <div class="input-row">
+          <div class="input-label">SURR</div>
+          <input class="input-field rate-value" id="SURR" type="number" value="35" step="0.1">
+        </div>
+        <div class="input-row">
+          <div class="input-label">CURR</div>
+          <input class="input-field rate-value" id="CURR" type="number" value="80" step="0.1">
+        </div>
+        <div class="input-row">
+          <div class="input-label">iWAURR</div>
+          <input class="input-field rate-value" id="iWAURR" type="number" value="20" step="0.1">
+        </div>
+        <div class="input-row">
+          <div class="input-label">iMAURR</div>
+          <input class="input-field rate-value" id="iMAURR" type="number" value="10" step="0.1">
+        </div>
+        <div class="input-row">
+          <div class="input-label">WAU LOSS</div>
+          <input class="input-field rate-value" id="WAU_LOSS" type="number" value="30" step="0.1">
+        </div>
+        <div class="input-row">
+          <div class="input-label">MAU LOSS</div>
+          <input class="input-field rate-value" id="MAU_LOSS" type="number" value="40" step="0.1">
+        </div>
+        <div class="input-row">
+          <div class="input-label">Resurrection Rate</div>
+          <input class="input-field rate-value" id="RESURRECTION" type="number" value="5" step="0.1">
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title">试验参数</div>
+    <div class="param-row">
+      <div class="param-box">
+        <div class="param-label">时间跨度（年）</div>
+        <input class="param-input" id="years" type="number" value="2" min="1" max="10">
+      </div>
+      <div class="param-box">
+        <div class="param-label">每季度扰动幅度（%）</div>
+        <input class="param-input" id="changePercent" type="number" value="2" step="0.1" min="0.1" max="50">
+      </div>
+    </div>
+
+    <button class="calc-btn" onclick="calculate()"> 开始计算</button>
+  </div>
+</div>
+
+<!-- 结果 -->
+<div class="results-section">
+  <div class="results-header">
+    <div class="results-title">实验结果</div>
+    <div class="results-actions">
+      <button class="action-btn" onclick="exportResults()">⬇ 导出 CSV</button>
+      <button class="action-btn" onclick="shareResults()">↗ 分享</button>
+    </div>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>LEVER</th>
+        <th>IMPACT ON MAU</th>
+        <th>IMPACT ON DAU</th>
+      </tr>
+    </thead>
+    <tbody id="resultsBody">
+      <tr><td colspan="3" class="empty-state">请输入数据后点击"开始计算"</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+const presets = {
+  tool: {
+    NU:8000, RU:3000, SU:2000, CU:60000, WAU:15000, MAU:10000, DU:80000,
+    NURR:40, RURR:50, SURR:45, CURR:85, iWAURR:25, iMAURR:15,
+    WAU_LOSS:25, MAU_LOSS:35, RESURRECTION:3
+  },
+  social: {
+    NU:15000, RU:8000, SU:5000, CU:40000, WAU:25000, MAU:20000, DU:120000,
+    NURR:25, RURR:35, SURR:30, CURR:60, iWAURR:20, iMAURR:12,
+    WAU_LOSS:35, MAU_LOSS:45, RESURRECTION:8
+  }
+};
+
+function loadPreset(type) {
+  const p = presets[type];
+  const ids = ['NU','RU','SU','CU','WAU','MAU','DU','NURR','RURR','SURR','CURR','iWAURR','iMAURR','WAU_LOSS','MAU_LOSS','RESURRECTION'];
+  ids.forEach(id => { document.getElementById(id).value = p[id]; });
+}
+
+function getInputs() {
+  const v = id => parseFloat(document.getElementById(id).value) || 0;
+  return {
+    NU:v('NU'), RU:v('RU'), SU:v('SU'), CU:v('CU'),
+    WAU:v('WAU'), MAU:v('MAU'), DU:v('DU'),
+    NURR:v('NURR')/100, RURR:v('RURR')/100, SURR:v('SURR')/100,
+    CURR:v('CURR')/100, iWAURR:v('iWAURR')/100, iMAURR:v('iMAURR')/100,
+    WAU_LOSS:v('WAU_LOSS')/100, MAU_LOSS:v('MAU_LOSS')/100,
+    RESURRECTION:v('RESURRECTION')/100
+  };
+}
+
+/**
+ * 核心模拟算法 - 已修正
+ * 
+ * 模型定义：
+ * - DAU = NU + RU + SU + CU（四个今天活跃的桶）
+ * - WAU_total = DAU + WAU_bucket
+ * - MAU_total = WAU_total + MAU_bucket
+ * - Total = MAU_total + DU
+ * 
+ * 状态转移（每季度）：
+ * - NU → NURR → CU, (1-NURR) → WAU
+ * - RU → RURR → CU, (1-RURR) → WAU
+ * - SU → SURR → CU, (1-SURR) → WAU
+ * - CU → CURR → CU, (1-CURR) → WAU
+ * - WAU → iWAURR → CU, WAU_LOSS → MAU, 剩余 → WAU
+ * - MAU → iMAURR → RU, MAU_LOSS → DU, 剩余 → MAU
+ * - DU → RESURRECTION → SU, 剩余 → DU
+ * - 新NU从外部流入（Acquisition，唯一外部入口）
+ */
+function simulate(inputs, lever, changePct, numQuarters) {
+  // 复制转化率
+  let rates = {
+    NURR: inputs.NURR,
+    RURR: inputs.RURR,
+    SURR: inputs.SURR,
+    CURR: inputs.CURR,
+    iWAURR: inputs.iWAURR,
+    iMAURR: inputs.iMAURR,
+    WAU_LOSS: inputs.WAU_LOSS,
+    MAU_LOSS: inputs.MAU_LOSS,
+    RESURRECTION: inputs.RESURRECTION
+  };
+
+  // 转化率类 lever 映射
+  const rateLeverMap = {
+    'New User Retention Rate': 'NURR',
+    'Reactivated User Ret. Rate': 'RURR',
+    'Resurrected User Ret. Rate': 'SURR',
+    'Current User Retention Rate': 'CURR',
+    'Inactive WAU React. Rate': 'iWAURR',
+    'Inactive MAU React. Rate': 'iMAURR',
+    'Resurrected Users': 'RESURRECTION'
+  };
+
+  // 应用扰动
+  if (rateLeverMap[lever]) {
+    const key = rateLeverMap[lever];
+    rates[key] = Math.min(0.999, Math.max(0.001, rates[key] * (1 + changePct)));
+  }
+
+  // 初始状态（第0季度）
+  let state = {
+    NU: inputs.NU,
+    RU: inputs.RU,
+    SU: inputs.SU,
+    CU: inputs.CU,
+    WAU: inputs.WAU,
+    MAU: inputs.MAU,
+    DU: inputs.DU
+  };
+
+  const baseNU = inputs.NU; // 每季度新用户流入基准
+
+  for (let q = 0; q < numQuarters; q++) {
+    // 外部新用户流入（唯一外部入口，可扰动）
+    let newNUInput = baseNU;
+    if (lever === 'New Users') {
+      newNUInput = baseNU * (1 + changePct);
+    }
+
+    // === 状态转移 ===
+
+    // NU → CU / WAU
+    const nu_to_cu = state.NU * rates.NURR;
+    const nu_to_wau = state.NU * (1 - rates.NURR);
+
+    // RU → CU / WAU
+    const ru_to_cu = state.RU * rates.RURR;
+    const ru_to_wau = state.RU * (1 - rates.RURR);
+
+    // SU → CU / WAU
+    const su_to_cu = state.SU * rates.SURR;
+    const su_to_wau = state.SU * (1 - rates.SURR);
+
+    // CU → CU / WAU
+    const cu_to_cu = state.CU * rates.CURR;
+    const cu_to_wau = state.CU * (1 - rates.CURR);
+
+    // WAU → CU / MAU / stay
+    const wau_to_cu = state.WAU * rates.iWAURR;
+    const wau_to_mau = state.WAU * rates.WAU_LOSS;
+    const wau_stay = Math.max(0, state.WAU * (1 - rates.iWAURR - rates.WAU_LOSS));
+
+    // MAU → RU / DU / stay
+    const mau_to_ru = state.MAU * rates.iMAURR;
+    const mau_to_du = state.MAU * rates.MAU_LOSS;
+    const mau_stay = Math.max(0, state.MAU * (1 - rates.iMAURR - rates.MAU_LOSS));
+
+    // DU → SU / stay
+    const du_to_su = state.DU * rates.RESURRECTION;
+    const du_stay = state.DU * (1 - rates.RESURRECTION);
+
+    // === 更新状态 ===
+    state.NU = newNUInput;                          // 新用户从外部流入
+    state.RU = mau_to_ru;                           // 重新激活用户来自MAU
+    state.SU = du_to_su;                            // 复活用户来自DU
+    state.CU = cu_to_cu + nu_to_cu + ru_to_cu + su_to_cu + wau_to_cu;  // 当前用户 = 各桶留存+回流
+    state.WAU = cu_to_wau + nu_to_wau + ru_to_wau + su_to_wau + wau_stay;  // 风险周活 = 各桶流失+留存
+    state.MAU = wau_to_mau + mau_stay;              // 风险月活 = WAU流失+MAU留存
+    state.DU = mau_to_du + du_stay;                 // 休眠用户 = MAU流失+DU留存
+  }
+
+  // === 计算最终指标 ===
+  // DAU = 四个今天活跃的桶之和
+  const DAU = state.NU + state.RU + state.SU + state.CU;
+  // WAU = DAU + 风险周活
+  const WAU_total = DAU + state.WAU;
+  // MAU = WAU + 风险月活
+  const MAU_total = WAU_total + state.MAU;
+
+  return { DAU, MAU: MAU_total };
+}
+
+let lastResults = null;
+
+function calculate() {
+  const inputs = getInputs();
+  const years = Math.max(1, parseInt(document.getElementById('years').value) || 2);
+  const changePct = (parseFloat(document.getElementById('changePercent').value) || 2) / 100;
+  const nQ = years * 4; // 每年4个季度
+
+  // 基准模拟（无扰动）
+  const baseline = simulate(inputs, null, 0, nQ);
+
+  // 8个主要 levers
+  const levers = [
+    { name: 'New Users', key: 'New Users' },
+    { name: 'Resurrected Users', key: 'Resurrected Users' },
+    { name: 'Current User Retention Rate', key: 'Current User Retention Rate' },
+    { name: 'New User Retention Rate', key: 'New User Retention Rate' },
+    { name: 'Reactivated User Ret. Rate', key: 'Reactivated User Ret. Rate' },
+    { name: 'Resurrected User Ret. Rate', key: 'Resurrected User Ret. Rate' },
+    { name: 'Inactive WAU React. Rate', key: 'Inactive WAU React. Rate' },
+    { name: 'Inactive MAU React. Rate', key: 'Inactive MAU React. Rate' }
+  ];
+
+  lastResults = [];
+  const tbody = document.getElementById('resultsBody');
+  tbody.innerHTML = '';
+
+  levers.forEach(l => {
+    const res = simulate(inputs, l.key, changePct, nQ);
+    const mauImp = ((res.MAU - baseline.MAU) / baseline.MAU * 100);
+    const dauImp = ((res.DAU - baseline.DAU) / baseline.DAU * 100);
+    lastResults.push({ lever: l.name, mau: mauImp, dau: dauImp });
+
+    const mauStr = (mauImp >= 0 ? '+' : '') + mauImp.toFixed(2) + '%';
+    const dauStr = (dauImp >= 0 ? '+' : '') + dauImp.toFixed(2) + '%';
+    const mauCls = mauImp > 0 ? 'positive' : mauImp < 0 ? 'negative' : '';
+    const dauCls = dauImp > 0 ? 'positive' : dauImp < 0 ? 'negative' : '';
+    const dauDisplay = Math.abs(dauImp) > 50
+      ? `<span class="highlight-badge">${dauStr}</span>`
+      : `<span class="${dauCls}">${dauStr}</span>`;
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${l.name}</td><td class="${mauCls}">${mauStr}</td><td>${dauDisplay}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function exportResults() {
+  if (!lastResults) { alert('请先计算'); return; }
+  const years = document.getElementById('years').value;
+  const changePct = document.getElementById('changePercent').value;
+  let csv = `CURR Experiment Results\n`;
+  csv += `Years: ${years}, Quarterly Change: ${changePct}%\n\n`;
+  csv += 'LEVER,Impact on MAU,Impact on DAU\n';
+  lastResults.forEach(r => {
+    csv += `"${r.lever}",${r.mau.toFixed(2)}%,${r.dau.toFixed(2)}%\n`;
+  });
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `curr_results_${years}years_${changePct}pct.csv`;
+  a.click();
+}
+
+function shareResults() {
+  if (!lastResults) { alert('请先计算'); return; }
+  const years = document.getElementById('years').value;
+  const changePct = document.getElementById('changePercent').value;
+  const text = `CURR实验结果（${years}年，每季度+${changePct}%）:\n` +
+    lastResults.map(r => `${r.lever}: MAU ${r.mau >= 0 ? '+' : ''}${r.mau.toFixed(1)}%, DAU ${r.dau >= 0 ? '+' : ''}${r.dau.toFixed(1)}%`).join('\n');
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => alert('结果已复制到剪贴板'));
+  } else {
+    prompt('复制以下结果：', text);
+  }
+}
+</script>
+</body>
+</html>
