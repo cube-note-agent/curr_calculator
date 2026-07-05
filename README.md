@@ -1,1 +1,1 @@
-(curr model)[curr.png]
+![curr model](curr.png)
