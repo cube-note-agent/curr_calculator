@@ -1,2 +1,2 @@
-![srceenshot.png](screenshot)
+![screenshot.png](screenshot)
 ![curr model](curr.png)
